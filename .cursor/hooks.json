@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/log-model-usage.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/log-model-usage.sh"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": ".cursor/hooks/log-model-usage.sh"
+      }
+    ]
+  }
+}

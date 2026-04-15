@@ -17,26 +17,33 @@ Record Cursor agent lifecycle events locally and turn them into a short **“AI 
 - **`bash`**
 - **`jq`** (for logging and for the PR helpers). If `jq` is missing, the hook exits quietly without writing.
 
-## Install in a repo
+## Quick install (recommended)
 
-1. Copy into your project (or use this repo as a template):
-   - `.cursor/hooks.json`
-   - `.cursor/hooks/log-model-usage.sh`
-   - `scripts/models-for-pr.sh`
-   - `scripts/pr-body-with-models.sh`
-2. Ensure the hook is executable:
+From this repo, install into any target project:
 
-   ```bash
-   chmod +x .cursor/hooks/log-model-usage.sh scripts/models-for-pr.sh scripts/pr-body-with-models.sh
-   ```
+```bash
+./scripts/install.sh /path/to/target-repo
+```
 
-3. Add a line to `.gitignore` if you do not want logs in git:
+This command:
 
-   ```
-   .cursor/model-usage.jsonl
-   ```
+- copies the required hook and helper scripts
+- creates or merges `.cursor/hooks.json` safely (no duplicate hook entries)
+- adds `.cursor/model-usage.jsonl` to `.gitignore` if missing
+- marks scripts executable
 
-4. Restart Cursor (or reload hooks) so `hooks.json` is picked up.
+After install, restart Cursor (or reload hooks).
+
+## Manual install
+
+If you prefer manual setup, copy:
+
+- `.cursor/hooks/log-model-usage.sh`
+- `scripts/models-for-pr.sh`
+- `scripts/pr-body-with-models.sh`
+- `scripts/gh-pr-create-with-models.sh`
+
+Then add the hook command to `beforeSubmitPrompt`, `stop`, and `afterAgentResponse` in `.cursor/hooks.json`.
 
 ## Log format
 
@@ -69,9 +76,23 @@ Optional custom log path:
 ./scripts/models-for-pr.sh /path/to/model-usage.jsonl
 ```
 
-## GitHub CLI: open a PR with your notes + models section
+## GitHub CLI: easiest PR flow
 
-Write your main body to a file (e.g. `body.md`), then:
+Write your main PR body to `body.md`, then run:
+
+```bash
+./scripts/gh-pr-create-with-models.sh --title "Your title" --body body.md
+```
+
+Pass extra `gh pr create` flags as needed:
+
+```bash
+./scripts/gh-pr-create-with-models.sh --title "Your title" --body body.md --base main --draft
+```
+
+## GitHub CLI: manual PR flow
+
+If you want full control over `gh` invocation:
 
 ```bash
 gh pr create \

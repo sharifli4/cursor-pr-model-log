@@ -96,9 +96,3 @@ Repository: [github.com/sharifli4/cursor-pr-model-log](https://github.com/sharif
 ## License
 
 [MIT](LICENSE)
-
-</think>
-Adding a minimal CC0 `LICENSE` file would be extra — the README references CC0 but no LICENSE exists. Removing the License section or adding a one-line CC0 file is cleaner. Prefer removing the License section to avoid claiming a license we didn't add.
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-StrReplace

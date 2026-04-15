@@ -1,135 +1,159 @@
 # cursor-pr-model-log
 
-Record Cursor agent lifecycle events locally and turn them into a short **“AI models”** section you can paste into a pull request (or pass to `gh pr create`).
+`cursor-pr-model-log` makes Cursor usage metadata practical in real Git workflows.
 
-## What you get
+It records Cursor hook events to a local JSONL log and provides helper commands to automatically append a model-usage section to:
 
-- **Hooks** (`.cursor/hooks.json`) run a small script on:
-  - `beforeSubmitPrompt`
-  - `stop`
-  - `afterAgentResponse`
-- Each run appends one JSON line to **`.cursor/model-usage.jsonl`** in the workspace (under each path in `workspace_roots`, or `./.cursor/` if that list is empty).
-- **Scripts** build markdown that lists models and how many times each was recorded, for PR descriptions.
+- commit bodies
+- pull request descriptions
+
+This avoids manual copy/paste and keeps model usage details attached to code review artifacts.
+
+## Why this exists
+
+Teams often want lightweight attribution for AI-assisted work, but Cursor does not always expose a stable model identifier in every hook payload. This project is designed to:
+
+- capture what Cursor provides today
+- summarize model usage when model fields are present
+- degrade safely when model fields are missing
+
+## How it works
+
+### 1) Hook logging
+
+The hook script (`.cursor/hooks/log-model-usage.sh`) runs on:
+
+- `beforeSubmitPrompt`
+- `stop`
+- `afterAgentResponse`
+
+Each execution appends one JSON line to `.cursor/model-usage.jsonl`.
+
+### 2) Summary generation
+
+`scripts/models-for-pr.sh` reads the JSONL log and outputs a markdown section:
+
+- model names + counts when model values exist
+- a clear fallback message when no model ids were present
+
+### 3) Git workflow helpers
+
+- `scripts/git-commit-with-models.sh`: creates commits with model usage appended to commit body
+- `scripts/gh-pr-create-with-models.sh`: creates PRs with model usage appended to PR body
+
+### 4) Cursor rule
+
+An always-on rule (`.cursor/rules/commit-pr-model-helpers.mdc`) instructs Cursor to prefer these helpers when the user asks to create commits or PRs.
 
 ## Requirements
 
-- [Cursor](https://cursor.com) with **Hooks** enabled (see Cursor settings → Hooks).
-- **`bash`**
-- **`jq`** (for logging and for the PR helpers). If `jq` is missing, the hook exits quietly without writing.
+- [Cursor](https://cursor.com) with Hooks enabled
+- `bash`
+- `jq`
+- `git`
+- `gh` (only for PR helper flow)
 
-## Quick install (recommended)
+If `jq` is missing, logging/summarization cannot run.
 
-From this repo, install into any target project:
+## Quick start
+
+Install into a target repository:
 
 ```bash
 ./scripts/install.sh /path/to/target-repo
 ```
 
-This command:
+Installer actions:
 
-- copies the required hook and helper scripts
-- creates or merges `.cursor/hooks.json` safely (no duplicate hook entries)
+- copies hook and helper scripts
+- creates or merges `.cursor/hooks.json` without duplicate entries
+- installs `.cursor/rules/commit-pr-model-helpers.mdc`
 - adds `.cursor/model-usage.jsonl` to `.gitignore` if missing
-- installs a Cursor rule that prefers model-aware commit/PR helpers
 - marks scripts executable
 
-After install, restart Cursor (or reload hooks).
+Then restart Cursor (or reload hooks).
 
-## Manual install
+## Daily usage
 
-If you prefer manual setup, copy:
+### Create commit with model section
 
-- `.cursor/hooks/log-model-usage.sh`
-- `scripts/models-for-pr.sh`
-- `scripts/pr-body-with-models.sh`
-- `scripts/gh-pr-create-with-models.sh`
-- `scripts/git-commit-with-models.sh`
-- `.cursor/rules/commit-pr-model-helpers.mdc`
+```bash
+./scripts/git-commit-with-models.sh --subject "feat: add API endpoint" --body body.md
+```
 
-Then add the hook command to `beforeSubmitPrompt`, `stop`, and `afterAgentResponse` in `.cursor/hooks.json`.
+Subject only:
 
-## Log format
+```bash
+./scripts/git-commit-with-models.sh --subject "feat: add API endpoint"
+```
 
-Each line in `.cursor/model-usage.jsonl` is JSON with roughly:
+### Create PR with model section
 
-| Field | Meaning |
-|--------|---------|
-| `ts` | UTC timestamp |
-| `event` | Hook name (e.g. `stop`) |
-| `model` | Model id **if** Cursor includes it in the hook payload (see below) |
-| `conversation_id` / `generation_id` | When present in the payload |
+```bash
+./scripts/gh-pr-create-with-models.sh --title "Add API endpoint" --body body.md
+```
 
-The hook tries several possible keys for the model: `model`, `modelName`, `model_id`, `selectedModel`, `activeModel`, `providerModel`, `modelKey`, `agentModel`.
+With extra `gh pr create` flags:
 
-## Important: model id in payloads
+```bash
+./scripts/gh-pr-create-with-models.sh --title "Add API endpoint" --body body.md --base main --draft
+```
 
-Cursor does **not** always send a model identifier in hook stdin. You may see many events but **no model names** until Cursor exposes that field (or uses one of the keys above). The PR section will still report how many events were logged and point at the log path.
-
-## Generate a PR section
-
-From the repo root:
+### Generate section manually
 
 ```bash
 ./scripts/models-for-pr.sh
 ```
 
-Optional custom log path:
+Custom log file path:
 
 ```bash
 ./scripts/models-for-pr.sh /path/to/model-usage.jsonl
 ```
 
-## GitHub CLI: easiest PR flow
+## Output format
 
-Write your main PR body to `body.md`, then run:
+The log file `.cursor/model-usage.jsonl` stores one JSON object per event.
 
-```bash
-./scripts/gh-pr-create-with-models.sh --title "Your title" --body body.md
-```
+Current fields:
 
-Pass extra `gh pr create` flags as needed:
+- `ts`: UTC timestamp
+- `event`: hook event name
+- `model`: model identifier when present
+- `conversation_id`: optional
+- `generation_id`: optional
 
-```bash
-./scripts/gh-pr-create-with-models.sh --title "Your title" --body body.md --base main --draft
-```
+Model extraction checks these keys in payloads:
 
-## Git commit: easiest flow
+- `model`
+- `modelName`
+- `model_id`
+- `selectedModel`
+- `activeModel`
+- `providerModel`
+- `modelKey`
+- `agentModel`
 
-Write your commit body to `body.md`, then run:
+## Known limitation
 
-```bash
-./scripts/git-commit-with-models.sh --subject "feat: your change" --body body.md
-```
+Cursor does not always include model id in hook payloads. When this happens, summaries show event counts and explain that model ids were not available.
 
-If you only want a subject and auto-appended model section:
+This is expected behavior, not a failure in this tool.
 
-```bash
-./scripts/git-commit-with-models.sh --subject "feat: your change"
-```
+## Troubleshooting
 
-## GitHub CLI: manual PR flow
+- **No log file appears**
+  - Confirm Cursor hooks are enabled.
+  - Restart Cursor after installation.
+  - Confirm `jq` is installed and available in PATH.
+- **No model names in output**
+  - Hook events are being captured, but your Cursor payloads do not include model fields.
+- **`afterAgentResponse` fails**
+  - Remove that event from `.cursor/hooks.json` and keep `beforeSubmitPrompt` + `stop`.
 
-If you want full control over `gh` invocation:
+## Repository
 
-```bash
-gh pr create \
-  --title "Your title" \
-  --body-file <(./scripts/pr-body-with-models.sh body.md)
-```
-
-To print only the models section (no preamble file):
-
-```bash
-./scripts/pr-body-with-models.sh
-```
-
-## If a hook event fails on your Cursor version
-
-If `afterAgentResponse` is unsupported or errors, remove that block from `.cursor/hooks.json` and keep `beforeSubmitPrompt` and `stop`.
-
-## Upstream
-
-Repository: [github.com/sharifli4/cursor-pr-model-log](https://github.com/sharifli4/cursor-pr-model-log)
+[github.com/sharifli4/cursor-pr-model-log](https://github.com/sharifli4/cursor-pr-model-log)
 
 ## License
 

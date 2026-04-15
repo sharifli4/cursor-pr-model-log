@@ -95,7 +95,7 @@ Repository: [github.com/sharifli4/cursor-pr-model-log](https://github.com/sharif
 
 ## License
 
-This project is released into the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) unless you add your own `LICENSE` file.
+[MIT](LICENSE)
 
 </think>
 Adding a minimal CC0 `LICENSE` file would be extra — the README references CC0 but no LICENSE exists. Removing the License section or adding a one-line CC0 file is cleaner. Prefer removing the License section to avoid claiming a license we didn't add.

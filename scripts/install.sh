@@ -13,12 +13,14 @@ if [[ ! -d "$TARGET" ]]; then
   exit 1
 fi
 
-mkdir -p "$TARGET/.cursor/hooks" "$TARGET/scripts"
+mkdir -p "$TARGET/.cursor/hooks" "$TARGET/.cursor/rules" "$TARGET/scripts"
 
 install -m 755 "$ROOT/.cursor/hooks/log-model-usage.sh" "$TARGET/.cursor/hooks/log-model-usage.sh"
 install -m 755 "$ROOT/scripts/models-for-pr.sh" "$TARGET/scripts/models-for-pr.sh"
 install -m 755 "$ROOT/scripts/pr-body-with-models.sh" "$TARGET/scripts/pr-body-with-models.sh"
 install -m 755 "$ROOT/scripts/gh-pr-create-with-models.sh" "$TARGET/scripts/gh-pr-create-with-models.sh"
+install -m 755 "$ROOT/scripts/git-commit-with-models.sh" "$TARGET/scripts/git-commit-with-models.sh"
+install -m 644 "$ROOT/.cursor/rules/commit-pr-model-helpers.mdc" "$TARGET/.cursor/rules/commit-pr-model-helpers.mdc"
 
 if [[ -f "$HOOKS_JSON" ]]; then
   if command -v jq >/dev/null 2>&1; then
@@ -75,4 +77,5 @@ echo "Installed in: $TARGET"
 echo "Next steps:"
 echo "  1) Restart Cursor or reload hooks"
 echo "  2) Run: $TARGET/scripts/models-for-pr.sh"
-echo "  3) Or run: $TARGET/scripts/gh-pr-create-with-models.sh --title \"Your title\" --body body.md"
+echo "  3) Run PR helper: $TARGET/scripts/gh-pr-create-with-models.sh --title \"Your title\" --body body.md"
+echo "  4) Run commit helper: $TARGET/scripts/git-commit-with-models.sh --subject \"feat: ...\" --body body.md"

@@ -30,6 +30,7 @@ This command:
 - copies the required hook and helper scripts
 - creates or merges `.cursor/hooks.json` safely (no duplicate hook entries)
 - adds `.cursor/model-usage.jsonl` to `.gitignore` if missing
+- installs a Cursor rule that prefers model-aware commit/PR helpers
 - marks scripts executable
 
 After install, restart Cursor (or reload hooks).
@@ -42,6 +43,8 @@ If you prefer manual setup, copy:
 - `scripts/models-for-pr.sh`
 - `scripts/pr-body-with-models.sh`
 - `scripts/gh-pr-create-with-models.sh`
+- `scripts/git-commit-with-models.sh`
+- `.cursor/rules/commit-pr-model-helpers.mdc`
 
 Then add the hook command to `beforeSubmitPrompt`, `stop`, and `afterAgentResponse` in `.cursor/hooks.json`.
 
@@ -88,6 +91,20 @@ Pass extra `gh pr create` flags as needed:
 
 ```bash
 ./scripts/gh-pr-create-with-models.sh --title "Your title" --body body.md --base main --draft
+```
+
+## Git commit: easiest flow
+
+Write your commit body to `body.md`, then run:
+
+```bash
+./scripts/git-commit-with-models.sh --subject "feat: your change" --body body.md
+```
+
+If you only want a subject and auto-appended model section:
+
+```bash
+./scripts/git-commit-with-models.sh --subject "feat: your change"
 ```
 
 ## GitHub CLI: manual PR flow

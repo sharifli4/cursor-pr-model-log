@@ -1,0 +1,22 @@
+---
+description: Use model-aware commit and PR helpers
+alwaysApply: true
+---
+
+# Commit and PR helper policy
+
+When the user asks to create a git commit in this repository:
+
+- Prefer `scripts/git-commit-with-models.sh` over raw `git commit`.
+- Ask for commit subject/body only if missing.
+- Use `--subject` for the commit title.
+- If there is a body file or text, pass it with `--body`.
+- Keep normal git safety behavior (no destructive git commands, no force push unless explicitly requested).
+
+When the user asks to create a pull request in this repository:
+
+- Prefer `scripts/gh-pr-create-with-models.sh` so the PR body includes model usage details.
+- Ask for title/body/base only if missing.
+- Pass extra PR flags through to the helper script.
+
+If the user explicitly asks to bypass these helpers, follow the user request.
